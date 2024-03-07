@@ -1,19 +1,21 @@
 package usopshiy.web4.database;
 
-import jakarta.ejb.Stateful;
+import jakarta.ejb.Singleton;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
+import usopshiy.web4.entity.Point;
 import usopshiy.web4.entity.User;
 import usopshiy.web4.utils.Hash;
 
-import javax.persistence.NoResultException;
+import java.util.List;
 
-@Stateful
-public class UserDB {
+@Singleton
+public class DBHandler {
     private final SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
     private final Session session = sessionFactory.openSession();
 
+    //User part
     public User createUser(String login, String email, String password) {
             final User user = new User();
             final String hashPass = Hash.SHA(password);
@@ -31,7 +33,7 @@ public class UserDB {
             session.persist(user);
             session.getTransaction().commit();
             return true;
-        } catch (IllegalArgumentException e){
+        } catch (Exception e){
             return false;
         }
     }
@@ -44,14 +46,14 @@ public class UserDB {
 
     public String doUserExist(String email){
         try{
-            User user = (User) session.createQuery("FROM User u where u.email = :email").
+            User user = (User) session.createQuery("FROM User  u where u.email = :email").
                     setParameter("email", email).
                     getSingleResult();
             if (user == null){
                 return "false1";
             }
             else return "true";
-        } catch (NoResultException e) {
+        } catch (Exception e) {
             return "false2";
         }
     }
@@ -62,4 +64,46 @@ public class UserDB {
         return user;
     }
 
+
+    //Point part
+
+    public Point createPoint(Double x, Double y, Integer r, User user){
+        final Point point = new Point();
+        point.setUser(user);
+        point.setX(x);
+        point.setY(y);
+        point.setR(r);
+        point.check();
+
+        return point;
+    }
+
+    public boolean clearPoints(User owner){
+        try{
+            session.getTransaction().begin();
+            session.createQuery("delete from Point p where p.user = :owner").
+                setParameter("owner", owner).executeUpdate();
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e) {
+            System.err.println(e);
+            return false;}
+    }
+
+    public boolean addPoint(Point point){
+        try {
+            session.getTransaction().begin();
+            session.persist(point);
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
+    public List getPoints(User owner){
+        return session.createQuery("From Point p where p.user = :owner").
+                setParameter("owner", owner).
+                getResultList();
+    }
 }
