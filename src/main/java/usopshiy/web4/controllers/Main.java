@@ -1,4 +1,4 @@
-package usopshiy.web4.model;
+package usopshiy.web4.controllers;
 
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.*;
